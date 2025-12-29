@@ -9,7 +9,15 @@ We integrate with [Argyle](https://argyle.com) to sync payroll data. When a user
 Implement a complete data sync pipeline:
 
 ```
-Webhook arrives → Validate & verify → Find income record → Trigger background task → Fetch from API → Save to database
+┌─────────────────┐      ┌──────────────────┐      ┌───────────────────┐
+│ Webhook arrives │─────▶│ Validate & verify│─────▶│ Find income record│
+└─────────────────┘      └──────────────────┘      └─────────┬─────────┘
+                                                             │
+                                                             ▼
+┌─────────────────┐      ┌──────────────────┐      ┌───────────────────┐
+│ Save to database│◀─────│  Fetch from API  │◀─────│Trigger background │
+└─────────────────┘      └──────────────────┘      │       task        │
+                                                   └───────────────────┘
 ```
 
 ## Files to Implement
