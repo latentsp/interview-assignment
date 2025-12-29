@@ -54,7 +54,7 @@ Before implementing, explore the codebase:
 - [ ] Inserts new paystubs
 - [ ] Updates existing paystubs
 - [ ] No duplicate records
-- [ ] Returns `{ inserted, updated, total }`
+- [ ] Returns `{ processed }`
 
 ### Webhook Schemas
 - [ ] Validates all three event types
