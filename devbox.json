@@ -4,7 +4,8 @@
     "nodejs@latest",
     "pnpm@latest",
     "go@latest",
-    "jq@latest"
+    "jq@latest",
+    "sqlite@latest"
   ],
   "shell": {
     "init_hook": [
