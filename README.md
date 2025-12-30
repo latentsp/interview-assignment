@@ -53,7 +53,7 @@ Before implementing, explore the codebase:
 - [ ] Returns 200 for valid webhooks
 - [ ] Logs all events to `webhook_events` table (including failures)
 - [ ] Updates `processed_at` or `failed_at` with error details
-- [ ] Triggers sync for: `paystubs.fully_synced`, `paystubs.added`, `paystubs.updated`
+- [ ] Triggers sync for: `paystubs.fully_synced`, `paystubs.partially_synced`, `paystubs.added`, `paystubs.updated`
 - [ ] Finds income by `external_account_id`
 
 ### Sync Task
@@ -65,7 +65,7 @@ Before implementing, explore the codebase:
 - [ ] Returns `{ processed }`
 
 ### Webhook Schemas
-- [ ] Validates all three event types
+- [ ] Validates all event types
 - [ ] Exports schema and TypeScript type
 
 ## Setup
@@ -80,6 +80,89 @@ pnpm dev
 pnpm trigger:dev
 ```
 
+## Argyle Mock Server
+
+This project includes a local mock server that simulates the Argyle API. It sends webhooks to your application and exposes a paystubs API for fetching data.
+
+### Starting the Mock Server
+
+Pre-built binaries are available in the `bin/` folder. Run the appropriate one for your platform:
+
+```bash
+# Mac (Apple Silicon)
+./bin/argyle-mock-darwin-arm64
+
+# Mac (Intel)
+./bin/argyle-mock-darwin-amd64
+
+# Linux
+./bin/argyle-mock-linux-amd64
+
+# Windows
+./bin/argyle-mock-windows-amd64.exe
+```
+
+The server runs on `http://localhost:8080`.
+
+### Registering Your Webhook
+
+Before the mock server can send events to your app, register your webhook endpoint:
+
+```bash
+curl -X POST http://localhost:8080/webhooks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Subscription",
+    "url": "http://localhost:3000/api/webhooks/argyle",
+    "secret": "your-webhook-secret",
+    "events": ["paystubs.added", "paystubs.fully_synced", "paystubs.updated"]
+  }'
+```
+
+> **Important:** The `secret` you provide here must match your `ARGYLE_WEBHOOK_SECRET` environment variable. All webhooks are signed with `X-Argyle-Signature` (HMAC-SHA256).
+
+### Simulating a User Connection
+
+To simulate a user connecting their payroll account using the **seeded test data**:
+
+```bash
+curl -X POST http://localhost:8080/simulate/connect-seeded
+```
+
+This uses the pre-seeded account ID (`019b41d0-7a84-72db-beab-4f62f8e86ce4`) that matches the income record in the database, allowing you to test the full sync flow.
+
+To simulate with a random (new) account:
+
+```bash
+curl -X POST http://localhost:8080/simulate/connect
+```
+
+### What Happens During Simulation
+
+When you trigger `/simulate/connect-seeded`:
+
+1. **24 months of paystub history** is generated
+2. `paystubs.partially_synced` webhook is sent
+3. `paystubs.fully_synced` webhook is sent
+4. Your handler should trigger the sync task to fetch and store the data
+
+### Mock API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/webhooks` | Register your webhook URL |
+| `POST` | `/simulate/connect` | Simulate random account connection |
+| `POST` | `/simulate/connect-seeded` | Simulate seeded account connection |
+| `GET` | `/paystubs?account={id}&limit={n}&offset={n}` | List paystubs (paginated) |
+| `GET` | `/paystubs/{id}` | Get a specific paystub |
+
+### Background Behavior
+
+Once registered, the mock server automatically:
+- Sends random `paystubs.added` and `paystubs.updated` webhooks every 3-8 seconds
+- ~20% of events use the seeded account ID
+- Persists all data to `db.json` (survives restarts)
+
 ## Database
 
 The database is pre-seeded with a test user and income record. Use Prisma Studio to explore:
@@ -88,6 +171,7 @@ The database is pre-seeded with a test user and income record. Use Prisma Studio
 pnpm db:studio
 ```
 
-## Time
+The seeded income record has:
+- `external_account_id`: `019b41d0-7a84-72db-beab-4f62f8e86ce4`
 
-~1.5 hours
+This matches the account ID used by `/simulate/connect-seeded`.
