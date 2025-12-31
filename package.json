@@ -10,6 +10,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
+    "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "trigger:dev": "trigger dev"
   },

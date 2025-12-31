@@ -5,8 +5,11 @@
 We integrate with [Argyle](https://argyle.com) to sync payroll data. When a user connects their payroll account, Argyle sends webhooks notifying us of new or updated paystubs. Your task is to implement the webhook handler and background sync task.
 
 ## Prerequisites
-* Register and init trigger.dev and copy the project id and API key
-* Create a `.env` file
+* Create a `.env` file and fill it with the correct information as needed in `env.ts`
+  * ARGYLE_ID and ARGYLE_SECRET can be mocked
+  * Argyle Base URL needs to be set up correctly, this README.md explains it's purpose
+  * ARGYLE_WEBHOOK_SECRET needs to be set up correctly, this README.md explains it's purpose
+  * Register (https://trigger.edv) and copy the Project id and API key
 
 ## The Task
 
@@ -34,7 +37,7 @@ Implement a complete data sync pipeline:
 
 Each file contains requirements. Read them.
 
-## Documentation
+## Additional Documentation
 
 - [Argyle Paystubs Webhooks](https://docs.argyle.com/api-reference/paystubs-webhooks) - Webhook events, payloads, signature verification
 - [Argyle Paystubs API](https://docs.argyle.com/api-reference/paystubs) - Fetching paystub data
@@ -76,12 +79,15 @@ Before implementing, explore the codebase:
 
 ```bash
 pnpm install
-pnpm db:push
-pnpm db:migrate
-pnpm dev
 
-pnpm dlx trigger.dev@latest dev
+pnpm db:push
+pnpm db:generate
+pnpm dev
 ```
+
+Open two additional terminal screens and do:
+1. `pnpm dlx trigger.dev@latest dev`
+2. `./scripts/run-mock-server`
 
 ## Argyle Mock Server
 
@@ -89,20 +95,10 @@ This project includes a local mock server that simulates the Argyle API. It send
 
 ### Starting the Mock Server
 
-Pre-built binaries are available in the `bin/` folder. Run the appropriate one for your platform:
+Run the mock server using the wrapper script which automatically detects your platform:
 
 ```bash
-# Mac (Apple Silicon)
-./bin/argyle-mock-darwin-arm64
-
-# Mac (Intel)
-./bin/argyle-mock-darwin-amd64
-
-# Linux
-./bin/argyle-mock-linux-amd64
-
-# Windows
-./bin/argyle-mock-windows-amd64.exe
+./scripts/run-mock-server
 ```
 
 The server runs on `http://localhost:8080`.
@@ -161,9 +157,14 @@ When you trigger `/simulate/connect-seeded`:
 
 ### Background Behavior
 
+The binary implements an Argyle Mock Server that simulates a payroll/paystub API with webhook functionality.
+It generates fake paystub data, sends webhook events (like `paystubs.added`, `paystubs.updated`, `paystubs.fully_synced`) to a registered callback URL, and exposes REST endpoints for querying paystubs.
+The server includes a comprehensive chaos engineering system that intentionally introduces data, state, timing, order, network or security failures.
+
 Once registered, the mock server automatically:
 - Sends random `paystubs.added` and `paystubs.updated` webhooks every 3-8 seconds
 - ~20% of events use the seeded account ID
+- ~5% of events include a failure scenario
 - Persists all data to `db.json` (survives restarts)
 
 ## Database
@@ -176,11 +177,5 @@ pnpm db:studio
 
 The seeded income record has:
 - `external_account_id`: `019b41d0-7a84-72db-beab-4f62f8e86ce4`
-
-## Argyle Mock API Server
-
-The binary implements an Argyle Mock Server that simulates a payroll/paystub API with webhook functionality.
-It generates fake paystub data, sends webhook events (like paystubs.added, paystubs.updated, fully_synced) to a registered callback URL, and exposes REST endpoints for querying paystubs.
-The server includes a comprehensive chaos engineering system (~5% of requests) that intentionally introduces failures like malformed JSON, wrong signatures, timeouts, out-of-order events, and replay attacks to test client resilience.
 
 This matches the account ID used by `/simulate/connect-seeded`.

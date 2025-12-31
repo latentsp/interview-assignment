@@ -12,6 +12,7 @@ export const env = createEnv({
     ARGYLE_SECRET: z.string(),
     ARGYLE_WEBHOOK_SECRET: z.string(),
     TRIGGER_SECRET_KEY: z.string(),
+    TRIGGER_PROJECT_ID: z.string(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
@@ -34,6 +35,7 @@ export const env = createEnv({
     ARGYLE_SECRET: process.env.ARGYLE_SECRET,
     ARGYLE_WEBHOOK_SECRET: process.env.ARGYLE_WEBHOOK_SECRET,
     TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
+    TRIGGER_PROJECT_ID: process.env.TRIGGER_PROJECT_ID,
     NODE_ENV: process.env.NODE_ENV,
   },
 

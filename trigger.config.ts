@@ -1,12 +1,8 @@
 import { defineConfig } from "@trigger.dev/sdk/v3";
-
-const triggerProjectId = process.env.TRIGGER_PROJECT_ID;
-if (!triggerProjectId) {
-  throw new Error("TRIGGER_PROJECT_ID is not set");
-}
+import { env } from "./src/env";
 
 export default defineConfig({
-  project: triggerProjectId,
+  project: env.triggerProjectId,
   runtime: "node",
   logLevel: "log",
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
