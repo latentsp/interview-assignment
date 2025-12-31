@@ -4,6 +4,10 @@
 
 We integrate with [Argyle](https://argyle.com) to sync payroll data. When a user connects their payroll account, Argyle sends webhooks notifying us of new or updated paystubs. Your task is to implement the webhook handler and background sync task.
 
+## Prerequisites
+* Register and init trigger.dev and copy the project id and API key
+* Create a `.env` file
+
 ## The Task
 
 Implement a complete data sync pipeline:
@@ -73,11 +77,10 @@ Before implementing, explore the codebase:
 ```bash
 pnpm install
 pnpm db:push
-pnpm db:seed
+pnpm db:migrate
 pnpm dev
 
-# In another terminal:
-pnpm trigger:dev
+pnpm dlx trigger.dev@latest dev
 ```
 
 ## Argyle Mock Server
@@ -173,5 +176,11 @@ pnpm db:studio
 
 The seeded income record has:
 - `external_account_id`: `019b41d0-7a84-72db-beab-4f62f8e86ce4`
+
+## Argyle Mock API Server
+
+The binary implements an Argyle Mock Server that simulates a payroll/paystub API with webhook functionality.
+It generates fake paystub data, sends webhook events (like paystubs.added, paystubs.updated, fully_synced) to a registered callback URL, and exposes REST endpoints for querying paystubs.
+The server includes a comprehensive chaos engineering system (~5% of requests) that intentionally introduces failures like malformed JSON, wrong signatures, timeouts, out-of-order events, and replay attacks to test client resilience.
 
 This matches the account ID used by `/simulate/connect-seeded`.
