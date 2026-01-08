@@ -4,6 +4,52 @@
 
 We integrate with mock [Argyle](https://argyle.com) to sync payroll data. When a user connects their payroll account, Argyle sends webhooks notifying us of new or updated paystubs. Your task is to implement the webhook handler and background sync task.
 
+## Minimum Requirements
+
+| Requirement | Version |
+|-------------|---------|
+| Node.js | v20.19.0+ (required by Prisma 7) |
+| pnpm | v9+ |
+| macOS / Linux | Required for mock server binary |
+
+> **⚠️ Important:** Prisma 7 requires Node.js **v20.19.0 or higher**. Earlier v20.x versions will fail. Check with `node -v`.
+>
+> **Note:** Windows users can use WSL2 to run the mock server.
+
+## Why Trigger.dev?
+
+This project uses [Trigger.dev](https://trigger.dev) v4 for background job processing. Here's why:
+
+### What is Trigger.dev?
+
+Trigger.dev is an open-source background jobs framework for TypeScript. It allows you to write long-running tasks that execute reliably outside of your HTTP request/response cycle.
+
+### Why do we need it?
+
+When Argyle sends a webhook notification (e.g., "new paystubs available"), we need to:
+
+1. **Respond quickly** — Webhooks expect a fast response (< 30s). If we take too long, the provider may retry or mark the delivery as failed.
+
+2. **Fetch paginated data** — Argyle may have dozens of paystubs to sync. Fetching and processing all pages could take minutes.
+
+3. **Handle failures gracefully** — If the Argyle API is temporarily down, we need automatic retries with exponential backoff.
+
+4. **Avoid duplicate processing** — Trigger.dev ensures each job runs exactly once, even if webhooks arrive multiple times.
+
+### How it works in this project
+
+```
+Webhook arrives → Validate & log → Trigger background task → Respond 200 immediately
+                                          ↓
+                       (Trigger.dev picks up the task asynchronously)
+                                          ↓
+                       Fetch all paystubs from Argyle API (with pagination)
+                                          ↓
+                       Upsert records to database
+```
+
+The webhook handler (`src/app/api/webhooks/argyle/route.ts`) triggers a task, and the actual sync logic runs in `src/trigger/sync-argyle-paystubs.ts`. This separation ensures webhooks are fast and reliable while heavy processing happens in the background.
+
 ## Prerequisites
 * Create a `.env` file and fill it with the correct information as needed in `env.ts`
   * ARGYLE_ID and ARGYLE_SECRET can be mocked
