@@ -2,7 +2,7 @@ import { defineConfig } from "@trigger.dev/sdk/v3";
 import { env } from "./src/env";
 
 export default defineConfig({
-  project: env.triggerProjectId,
+  project: env.TRIGGER_PROJECT_ID,
   runtime: "node",
   logLevel: "log",
   // The max compute seconds a task is allowed to run. If the task run exceeds this duration, it will be stopped.
