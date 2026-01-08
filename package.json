@@ -12,7 +12,8 @@
     "db:seed": "prisma db seed",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "trigger:dev": "trigger dev"
+    "trigger:dev": "trigger dev",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
