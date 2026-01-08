@@ -2,14 +2,14 @@
 
 ## Context
 
-We integrate with [Argyle](https://argyle.com) to sync payroll data. When a user connects their payroll account, Argyle sends webhooks notifying us of new or updated paystubs. Your task is to implement the webhook handler and background sync task.
+We integrate with mock [Argyle](https://argyle.com) to sync payroll data. When a user connects their payroll account, Argyle sends webhooks notifying us of new or updated paystubs. Your task is to implement the webhook handler and background sync task.
 
 ## Prerequisites
 * Create a `.env` file and fill it with the correct information as needed in `env.ts`
   * ARGYLE_ID and ARGYLE_SECRET can be mocked
   * Argyle Base URL needs to be set up correctly, this README.md explains it's purpose
   * ARGYLE_WEBHOOK_SECRET needs to be set up correctly, this README.md explains it's purpose
-  * Register (https://trigger.edv) and copy the Project id and API key
+  * Register (https://trigger.dev) and copy the Project id and API key
 
 ## The Task
 
