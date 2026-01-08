@@ -7,7 +7,7 @@ We integrate with mock [Argyle](https://argyle.com) to sync payroll data. When a
 ## Prerequisites
 * Create a `.env` file and fill it with the correct information as needed in `env.ts`
   * ARGYLE_ID and ARGYLE_SECRET can be mocked
-  * Argyle Base URL needs to be set up correctly, this README.md explains it's purpose
+  * Argyle Base URL needs to be set up correctly, as Argyle Client references it, please refer to mock server section to understand what its value should be.
   * ARGYLE_WEBHOOK_SECRET needs to be set up correctly, this README.md explains it's purpose
   * Register (https://trigger.dev) and copy the Project id and API key
 
