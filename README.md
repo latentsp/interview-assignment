@@ -17,7 +17,7 @@ Implement a complete data sync pipeline:
 
 ```
 ┌─────────────────┐      ┌──────────────────┐      ┌───────────────────┐
-│ Webhook arrives │─────▶│ Validate & verify│─────▶│ Find income record│
+│ Webhook arrives │─────▶│ Validate & verify│─────▶│ Prepare data      |
 └─────────────────┘      └──────────────────┘      └─────────┬─────────┘
                                                              │
                                                              ▼
