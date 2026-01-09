@@ -1,203 +1,145 @@
-# Interview Task: Argyle Paystub Sync
+# Argyle Paystub Sync — Take-Home Assignment
 
-## Context
+## Your Task
 
-We integrate with mock [Argyle](https://argyle.com) to sync payroll data. When a user connects their payroll account, Argyle sends webhooks notifying us of new or updated paystubs. Your task is to implement the webhook handler and background sync task.
+Implement a webhook handler that receives mock Argyle paystub events, validates them, and triggers a background job to sync paystub data to our database.
 
-## Minimum Requirements
+**Time estimate:** 1.5 hours
 
-| Requirement | Version |
-|-------------|---------|
-| Node.js | v22.19.0+ |
-| pnpm | v9+ |
-| macOS / Linux | Required for mock server binary |
+---
 
-> **⚠️ Important:** Use Node.js **v22.19.0 or higher**. Check with `node -v`.
->
-> **Note:** Windows users can use WSL2 to run the mock server.
+## What You'll Implement
 
-## Why Trigger.dev?
+| File | What to Build |
+|------|---------------|
+| `src/lib/argyle/webhooks.ts` | Zod schema for webhook payload validation |
+| `src/app/api/webhooks/argyle/route.ts` | POST handler for incoming webhooks |
+| `src/trigger/sync-argyle-paystubs.ts` | Background task to fetch & store paystubs |
 
-This project uses [Trigger.dev](https://trigger.dev) v4 for background job processing. Here's why:
+Each file contains detailed requirements in comments. Read them first.
 
-### What is Trigger.dev?
-
-Trigger.dev is an open-source background jobs framework for TypeScript. It allows you to write long-running tasks that execute reliably outside of your HTTP request/response cycle.
-
-The webhook handler (`src/app/api/webhooks/argyle/route.ts`) triggers a task, and the actual sync logic runs in `src/trigger/sync-argyle-paystubs.ts`. This separation ensures webhooks are fast and reliable while heavy processing happens in the background.
-
-## Prerequisites
-* Create a `.env` file and fill it with the correct information as needed in `env.ts`
-  * ARGYLE_ID and ARGYLE_SECRET can be mocked
-  * Argyle Base URL needs to be set up correctly, as Argyle Client references it, please refer to mock server section to understand what its value should be.
-  * ARGYLE_WEBHOOK_SECRET needs to be set up correctly, this README.md explains it's purpose
-  * Register (https://trigger.dev) and copy the Project id and API key
-
-## The Task
-
-Implement a complete data sync pipeline:
-
-```
-┌─────────────────┐      ┌──────────────────┐      ┌───────────────────┐
-│ Webhook arrives │─────▶│ Validate & verify│─────▶│ Prepare data      |
-└─────────────────┘      └──────────────────┘      └─────────┬─────────┘
-                                                             │
-                                                             ▼
-┌─────────────────┐      ┌──────────────────┐      ┌───────────────────┐
-│ Save to database│◀─────│  Fetch from API  │◀─────│Trigger background │
-└─────────────────┘      └──────────────────┘      │       task        │
-                                                   └───────────────────┘
-```
-
-## Files to Implement
-
-| File | Purpose |
-|------|---------|
-| `src/lib/argyle/webhooks.ts` | Zod schemas for webhook payload validation |
-| `src/app/api/webhooks/argyle/route.ts` | Webhook HTTP handler |
-| `src/trigger/sync-argyle-paystubs.ts` | Background task to fetch and store paystubs |
-
-Each file contains requirements. Read them.
-
-## Additional Documentation
-
-- [Argyle Paystubs Webhooks](https://docs.argyle.com/api-reference/paystubs-webhooks) - Webhook events, payloads, signature verification
-- [Argyle Paystubs API](https://docs.argyle.com/api-reference/paystubs) - Fetching paystub data
-
-## Existing Code to Reference
-
-Before implementing, explore the codebase:
-
-- `src/lib/argyle/client.ts` - Argyle API client (you'll use this)
-- `src/lib/argyle/schemas.ts` - Zod schemas for API responses
-- `src/lib/db.ts` - Database client
-- `prisma/schema.prisma` - Database schema (check the `paystubs` and `incomes` tables)
-- `src/env.ts` - Environment variables
+---
 
 ## Acceptance Criteria
 
-### Webhook Handler
-- [ ] Returns 401 for missing/invalid signature
-- [ ] Returns 400 for invalid payload
-- [ ] Returns 200 for valid webhooks
-- [ ] Logs all events to `webhook_events` table (including failures)
-- [ ] Updates `processed_at` or `failed_at` with error details
-- [ ] Triggers sync for: `paystubs.fully_synced`, `paystubs.partially_synced`, `paystubs.added`, `paystubs.updated`
-- [ ] Finds income by `external_account_id`
+### Webhook Handler (`route.ts`)
+- [ ] Verify `X-Argyle-Signature` header (HMAC-SHA256) — return 401 if invalid
+- [ ] Validate payload with your Zod schema — return 400 if invalid
+- [ ] Log all events to `webhook_events` table (including failures)
+- [ ] For paystub events: find income by `external_account_id`, trigger sync task
+- [ ] Return 200 on success
 
-### Sync Task
-- [ ] Fetches paystubs from Argyle API
-- [ ] Handles pagination
-- [ ] Inserts new paystubs
-- [ ] Updates existing paystubs
-- [ ] No duplicate records
-- [ ] Returns `{ processed }`
+### Background Task (`sync-argyle-paystubs.ts`)
+- [ ] Fetch paystubs from Argyle API (handle pagination)
+- [ ] Upsert paystubs — insert new, update existing (match by `external_id`)
+- [ ] Return `{ processed: number }`
 
-### Webhook Schemas
-- [ ] Validates all event types
-- [ ] Exports schema and TypeScript type
+### Webhook Schema (`webhooks.ts`)
+- [ ] Validate event types: `paystubs.added`, `paystubs.updated`, `paystubs.fully_synced`, `paystubs.partially_synced`
+- [ ] Export schema and TypeScript type
+
+---
+
+## Reference Code
+
+Explore before you start:
+
+- `src/lib/argyle/client.ts` — Argyle API client (use this to fetch paystubs)
+- `src/lib/argyle/schemas.ts` — Zod schemas for API responses
+- `prisma/schema.prisma` — Database schema (`paystubs`, `incomes`, `webhook_events`)
+- `src/env.ts` — Environment variables
+
+---
 
 ## Setup
 
+### Requirements
+- Node.js **v22.19.0+** (`node -v`)
+- pnpm v9+
+- macOS or Linux (Windows: use WSL2)
+
+### Environment Variables
+
+Create `.env`:
+
+```env
+DATABASE_URL="file:./dev.db"
+ARGYLE_BASE_URL="http://localhost:8080"
+ARGYLE_ID="mock-id"
+ARGYLE_SECRET="mock-secret"
+ARGYLE_WEBHOOK_SECRET="your-webhook-secret"
+TRIGGER_SECRET_KEY="<from trigger.dev dashboard>"
+TRIGGER_PROJECT_ID="<from trigger.dev dashboard>"
+```
+
+Get Trigger.dev credentials at [trigger.dev](https://trigger.dev) (free account).
+
+### Run the App
+
 ```bash
 pnpm install
-
 pnpm db:push
 pnpm db:generate
-pnpm dev
+pnpm dev                           # Terminal 1: Next.js app
+pnpm dlx trigger.dev@latest dev    # Terminal 2: Trigger.dev worker
+./scripts/run-mock-server          # Terminal 3: Argyle mock server
 ```
 
-Open two additional terminal screens and do:
-1. `pnpm dlx trigger.dev@latest dev`
-2. `./scripts/run-mock-server`
+---
 
-## Argyle Mock Server
+## Testing Your Implementation
 
-This project includes a local mock server that simulates the Argyle API. It sends webhooks to your application and exposes a paystubs API for fetching data.
-
-### Starting the Mock Server
-
-Run the mock server using the wrapper script which automatically detects your platform:
-
-```bash
-./scripts/run-mock-server
-```
-
-The server runs on `http://localhost:8080`.
-
-### Registering Your Webhook
-
-Before the mock server can send events to your app, register your webhook endpoint:
+### 1. Register your webhook
 
 ```bash
 curl -X POST http://localhost:8080/webhooks \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "My Subscription",
+    "name": "Test",
     "url": "http://localhost:3000/api/webhooks/argyle",
     "secret": "your-webhook-secret",
     "events": ["paystubs.added", "paystubs.fully_synced", "paystubs.updated"]
   }'
 ```
 
-> **Important:** The `secret` you provide here must match your `ARGYLE_WEBHOOK_SECRET` environment variable. All webhooks are signed with `X-Argyle-Signature` (HMAC-SHA256).
+> The `secret` must match your `ARGYLE_WEBHOOK_SECRET` env var.
 
-### Simulating a User Connection
-
-To simulate a user connecting their payroll account using the **seeded test data**:
+### 2. Trigger a test sync
 
 ```bash
 curl -X POST http://localhost:8080/simulate/connect-seeded
 ```
 
-This uses the pre-seeded account ID (`019b41d0-7a84-72db-beab-4f62f8e86ce4`) that matches the income record in the database, allowing you to test the full sync flow.
+This uses the pre-seeded account ID (`019b41d0-7a84-72db-beab-4f62f8e86ce4`) that matches a database income record.
 
-To simulate with a random (new) account:
+### 3. Verify
 
-```bash
-curl -X POST http://localhost:8080/simulate/connect
-```
+Check Prisma Studio (`pnpm db:studio`) to see if paystubs were synced.
 
-### What Happens During Simulation
+---
 
-When you trigger `/simulate/connect-seeded`:
+## Mock Server API
 
-1. **24 months of paystub history** is generated
-2. `paystubs.partially_synced` webhook is sent
-3. `paystubs.fully_synced` webhook is sent
-4. Your handler should trigger the sync task to fetch and store the data
-
-### Mock API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/webhooks` | Register your webhook URL |
-| `POST` | `/simulate/connect` | Simulate random account connection |
-| `POST` | `/simulate/connect-seeded` | Simulate seeded account connection |
-| `GET` | `/paystubs?account={id}&limit={n}&offset={n}` | List paystubs (paginated) |
-| `GET` | `/paystubs/{id}` | Get a specific paystub |
-
-### Background Behavior
+| Endpoint | Description |
+|----------|-------------|
+| `POST /webhooks` | Register webhook URL |
+| `POST /simulate/connect-seeded` | Trigger webhooks for seeded account |
+| `GET /paystubs?account={id}&limit={n}&offset={n}` | List paystubs (paginated) |
 
 The binary implements an Argyle Mock Server that simulates a payroll/paystub API with webhook functionality.
 It generates fake paystub data, sends webhook events (like `paystubs.added`, `paystubs.updated`, `paystubs.fully_synced`) to a registered callback URL, and exposes REST endpoints for querying paystubs.
 The server includes a comprehensive chaos engineering system that intentionally introduces data, state, timing, order, network or security failures.
 
-Once registered, the mock server automatically:
-- Sends random `paystubs.added` and `paystubs.updated` webhooks every 3-8 seconds
-- ~20% of events use the seeded account ID
-- ~5% of events include a failure scenario
-- Persists all data to `db.json` (survives restarts)
+---
 
-## Database
+## Documentation
 
-The database is pre-seeded with a test user and income record. Use Prisma Studio to explore:
+- [Argyle Paystubs Webhooks](https://docs.argyle.com/api-reference/paystubs-webhooks)
+- [Argyle Paystubs API](https://docs.argyle.com/api-reference/paystubs)
+- [Trigger.dev Docs](https://trigger.dev/docs)
 
-```bash
-pnpm db:studio
-```
+---
 
-The seeded income record has:
-- `external_account_id`: `019b41d0-7a84-72db-beab-4f62f8e86ce4`
+## Questions?
 
-This matches the account ID used by `/simulate/connect-seeded`.
+If you're blocked on setup issues (not implementation), reach out. Good luck!
